@@ -16,7 +16,8 @@
             display: grid;
             grid-template-rows: 120px auto 80px;
             height: 100vh;
-
+            max-width: 700px;
+            margin: 0 auto;
         }
 
         button {
@@ -108,7 +109,7 @@
 
         #app>footer button {
             position: relative;
-            background-color: transparent;
+            background-color: #fff;
             outline: none;
             border: 1px solid rgb(200, 200, 200);
             border-radius: 50%;
@@ -151,6 +152,12 @@
             grid-row: 2;
             height: 100%;
             overflow-y: scroll;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .game_container::-webkit-scrollbar {
+            display: none;
         }
 
         .game_row {
@@ -329,7 +336,7 @@
                 highlighted: [],//this is for showing highlighted selection for example for the showPossibleMove function
                 nrColumns: 10,
                 startRows: 3,
-                maxNrOfRowsAddable: 0,
+                maxNrOfRowsAddable: 4,
                 nrOfRowsAdded: 0,
                 gameOverPopup: false
             },
