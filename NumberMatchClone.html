@@ -6,23 +6,167 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-    <title>Document</title>
+    <title>NumberMatch</title>
     <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #app {
+            display: grid;
+            grid-template-rows: 120px auto 80px;
+            height: 100vh;
+
+        }
+
+        button {
+            cursor: pointer;
+            background-color: transparent;
+            border: 1px solid rgb(200, 200, 200);
+            padding: 5px 8px;
+
+        }
+
+        /************************************************************************************************
+        ******************************************** HEADER *********************************************
+        ************************************************************************************************/
+        #app>header {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 5px;
+            grid-row: 1;
+            /* box-shadow: 0px 2px 5px 1px #000000; */
+            border-bottom: 1px solid rgb(200, 200, 200);
+            z-index: 2;
+        }
+
+        #app>header h1 {
+            flex: 1 0 100%;
+            margin: 5px;
+            text-align: center;
+        }
+
+        .score_wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1 0 25%;
+        }
+
+        .score_wrapper .score {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgb(200, 200, 200);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #4dc8e9;
+            box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .2), 0 2px 2px 0 rgba(0, 0, 0, .14), 0 1px 5px 0 rgba(0, 0, 0, .12);
+        }
+
+        .score_wrapper .score.updated {
+            animation: pulse 2s;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .2), 0 2px 2px 0 rgba(0, 0, 0, .14), 0 1px 5px 0 rgba(0, 0, 0, .12);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 5px rgba(0, 0, 0, .2);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .2), 0 2px 2px 0 rgba(0, 0, 0, .14), 0 1px 5px 0 rgba(0, 0, 0, .12);
+            }
+        }
+
+        .score_wrapper .label {
+            text-align: center;
+        }
+
+        /************************************************************************************************
+        ******************************************** FOOTER *********************************************
+        ************************************************************************************************/
+        #app>footer {
+            display: flex;
+            justify-content: space-around;
+            grid-row: 3;
+            padding: 10px;
+            background-color: #fff;
+            /* box-shadow: 0px -2px 5px 1px #000000; */
+            border-top: 1px solid rgb(200, 200, 200);
+            z-index: 2;
+        }
+
+        #app>footer button {
+            position: relative;
+            background-color: transparent;
+            outline: none;
+            border: 1px solid rgb(200, 200, 200);
+            border-radius: 50%;
+            height: 55px;
+            width: 55px;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .2), 0 2px 2px 0 rgba(0, 0, 0, .14), 0 1px 5px 0 rgba(0, 0, 0, .12) !important;
+        }
+
+        #app>footer button.large {
+            font-size: 3rem;
+        }
+
+        #app>footer button.text {
+            font-size: 1rem;
+        }
+
+        .badge {
+            position: absolute;
+            inset: auto -5px -5px auto;
+            width: 20px;
+            height: 20px;
+            background-color: #4dc8e9;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+        }
+
+        /************************************************************************************************
+        **************************************** GAME CONTAINER *****************************************
+        ************************************************************************************************/
         .game_container {
             padding: 5px;
+            grid-row: 2;
+            height: 100%;
+            overflow-y: scroll;
         }
 
         .game_row {
-            max-width: 100%;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
             display: flex;
         }
 
         .number {
             font-family: Roboto, sans-serif;
-            font-size: 24px;
+            font-size: min(6vw, 37px);
             display: inline-flex;
-            width: 40px;
-            height: 40px;
+            width: calc(100% / 10);
+            aspect-ratio: 1;
             border: 1px solid #eee;
             text-align: center;
             justify-content: center;
@@ -37,45 +181,131 @@
         .number.selected {
             background: #4dc8e9;
         }
+
+        .number.highlighted {
+            background: #6ce94d;
+        }
+
+        /************************************************************************************************
+        ******************************************** POPUP  *********************************************
+        ************************************************************************************************/
+        .popup_container {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup {
+            width: 100%;
+            max-width: 300px;
+            box-shadow: 0px 0px 17px 2px #000000;
+        }
+
+        .popup header {
+            font-size: 2rem;
+            text-align: center;
+            padding: 5px;
+            background-color: #4dc8e9;
+        }
+
+        .popup main {
+            text-align: center;
+            padding: 15px;
+        }
+
+        .popup main>div:first-child {
+            font-size: 1.3rem;
+        }
+
+        .popup main>div:nth-child(2) {
+            font-size: 0.9rem;
+        }
+
+        .popup footer {
+            text-align: center;
+            padding: 15px;
+        }
     </style>
 </head>
 
 <body>
 
     <div id="app" class="content_wrapper">
-        <button @click="startGame">start</button>
-        <button @click="addRows">add more Rows ({{maxNrOfRowsAddable - nrOfRowsAdded}})</button>
-        <button @click="showPossibleMove">check for possible move</button>
-        <span class="score">Score: {{score}}</span>
-        <span class="score">Stage: {{stage}}</span>
-        <div class="game_container">
-            <div class="game_row" v-for="(row, rowIndex) in numbers" :key="'row_' + rowIndex">
-                <span v-for="(number, columnIndex) in row" :key="columnIndex + '_number_' + columnIndex" @click="numberClick($event, rowIndex, columnIndex)" :class="['number', {'selected': selection.row === rowIndex && selection.column === columnIndex}]">{{number}}</span>
+        <header>
+            <h1>NumberMatch</h1>
+            <div class="score_wrapper">
+                <span :class="['score', {updated: stageUpdated}]">{{stage}}</span>
+                <span class="label">Stage</span>
             </div>
-        </div>
+            <div class="score_wrapper">
+                <span class="score">{{score}}</span>
+                <span class="label">Score</span>
+            </div>
+            <div class="score_wrapper">
+                <span class="score">{{highscore}}</span>
+                <span class="label">Highest</span>
+            </div>
+        </header>
+        <main class="game_container">
+            <div class="game_row" v-for="(row, rowIndex) in numbers" :key="'row_' + rowIndex">
+                <span v-for="(number, columnIndex) in row" :key="columnIndex + '_number_' + columnIndex"
+                    @click="numberClick($event, rowIndex, columnIndex)"
+                    :class="['number', 
+                    {'selected': selection.row === rowIndex && selection.column === columnIndex},
+                    {'highlighted': highlighted.some(cell => cell.row === rowIndex && cell.column === columnIndex)}]">{{number}}</span>
+            </div>
+        </main>
+        <footer>
+            <button @click="startGame" class="text">new Game</button>
+            <button @click="addRows" class="large">&plus;
+                <span class="badge">{{nrRowsToAdd}}</span>
+            </button>
+            <button @click="showPossibleMove">?</button>
+        </footer>
+        <!-- GAMEOVER POPUP -->
+        <aside class="popup_container" v-if="gameOverPopup">
+            <div class="popup">
+                <header>
+                    GAMEOVER
+                </header>
+                <main>
+                    <div>SCORE: {{score}}</div>
+                    <div>Highscore: {{highscore}}</div>
+                </main>
+                <footer>
+                    <button @click="gameOverPopup = false; startGame">new Game</button>
+                </footer>
+            </div>
+        </aside>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://unpkg.com/vue@2.6.11/dist/vue.min.js"></script>
     <script>
         /**
          * TODOs:
-         * [ ] check if more moves are possible and if there aren't and the user cannot "addMoreRows" -> GameOver
-         * [ ] implement function showPossibleMove() -> already exist just need to make sure the numbers will be highlighted
+         * [x] check if more moves are possible and if there aren't and the user cannot "addMoreRows" -> GameOver
+         * [x] implement function showPossibleMove() -> already exist just need to make sure the numbers will be highlighted
          *      [i] you will get an array with two objects containing row and col of the two matching neighbours
-         *      [ ] empty array if there are no matchings possible
-         * [ ] frontend design
-         *      [ ] layout
-         *      [ ] pretty buttons
-         *      [ ] score display
-         *      [ ] stage display
-         *      [ ] user feed back 
-         *          [ ] new stage
-         *          [ ] game over
-         *          [ ] no possible moves (after button click)
-         *          [ ] new Highscore
-         *      [ ] highscore display
-         * [ ] remember Highscore
+         *      [i] empty array if there are no matchings possible
+         * [x] Score add both numbers not just the latest clicked
+         * [x] frontend design
+         *      [x] layout
+         *      [x] pretty buttons
+         *      [x] score display
+         *      [x] stage display
+         *      [x] user feed back 
+         *          [x] new stage
+         *          [x] game over
+         *          [x] no possible moves (after button click)
+         *          [x] new Highscore
+         *      [x] highscore display
+         * [x] remember Highscore
          * [ ] difficulty -> less matches on initial rows
+         * [ ] explanation / howTo
          */
         /*------------------------------------------------------------------------------------------
         ----------------------------------------- GLOBALS ------------------------------------------
@@ -89,19 +319,29 @@
             data: {
                 numbers: [],
                 score: 0,
+                highscore: 0,
                 stage: 1,
+                stageUpdated: false,
                 selection: {
                     row: null,
                     column: null,
                     value: null
                 },
+                highlighted: [],//this is for showing highlighted selection for example for the showPossibleMove function
                 nrColumns: 10,
                 startRows: 3,
                 maxNrOfRowsAddable: 4,
                 nrOfRowsAdded: 0,
+                gameOverPopup: false
             },
-            computed: {},
-            created() {},
+            computed: {
+                nrRowsToAdd() {
+                    return this.maxNrOfRowsAddable - this.nrOfRowsAdded
+                }
+            },
+            created() {
+                this.highscore = +localStorage.getItem('highscore') || 0;
+            },
             methods: {
                 /**
                  * starts a new Game
@@ -150,6 +390,7 @@
                  * @param {Number} columnIndex
                  */
                 numberClick(event, rowIndex, columnIndex) {
+                    this.resetHighlightedNumbers();
                     if (this.selection.value === null) this.selectNumber(rowIndex, columnIndex);
                     else {
                         //check if the values of the first selection and the second are neighbours and equal or add up to 10 -> remove both numbers
@@ -158,17 +399,29 @@
 
                             this.removeNumber(rowIndex, columnIndex);
                             this.removeNumber(this.selection.row, this.selection.column);
+                            this.addPoints(value + this.selection.value);
                             this.deselectNumber();
 
                             this.deleteEmptyRows();
 
-
-                            this.addPoints(value + this.selection.value);
-
                             //new stage
                             if (!this.areNumbersLeft()) {
                                 this.fillNumbers();
-                                this.stage++;
+                                this.stageUpdated = true;
+                                setTimeout(() => {
+                                    this.stageUpdated = false;
+                                    this.stage++;
+                                }, 2000)
+                            }
+
+                            //Gameover check
+                            if (this.isGameover()) {
+                                console.log('GAMEOVER');
+                                this.gameOverPopup = true;
+                                if (this.highscore < this.score) {
+                                    localStorage.setItem('highscore', this.score);
+                                    this.highscore = this.score;
+                                }
                             }
 
                         } else {
@@ -188,6 +441,37 @@
                     this.selection.row = rowIndex;
                     this.selection.column = columnIndex;
                     this.selection.value = this.numbers[rowIndex][columnIndex];
+                },
+                /**
+                 * highlights the given rowIndex and columnIndex
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 */
+                highlightNumber(rowIndex, columnIndex) {
+                    this.highlighted.push({
+                        row: +rowIndex,
+                        column: +columnIndex,
+                        value: +this.numbers[rowIndex][columnIndex],
+                    })
+                },
+                highlightAllNumbers() {
+                    this.resetHighlightedNumbers();
+                    for (const row in this.numbers) {
+                        for (const column in this.numbers[row]) {
+                            this.highlighted.push({
+                                row: +row,
+                                column: +column
+                            })
+                        }
+                    }
+                },
+                /**
+                 * resets highlighted color
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 */
+                resetHighlightedNumbers() {
+                    this.highlighted.splice(0, this.highlighted.length)
                 },
                 /**
                  * deselects the current selection
@@ -375,10 +659,8 @@
                  * @returns {Array<Object>} or an empty array if nothing was found
                  */
                 getPossibleMove() {
-                    console.log('getPossibleMove()');
                     for (let row in this.numbers) {
                         for (let col in this.numbers[row]) {
-                            console.log('select row: ' + row + ' - col:' + col);
                             if (!this.numbers[row][col]) continue;
 
                             this.selectNumber(+row, +col);
@@ -396,10 +678,13 @@
 
                                     if (neighbour) {
                                         const value = this.numbers[neighbour.row][neighbour.column];
-                                        if (this.valuesMatchesSelection(value)) return [{
-                                            row: row,
-                                            column: col
-                                        }, neighbour];
+                                        if (this.valuesMatchesSelection(value)) {
+                                            this.deselectNumber();
+                                            return [{
+                                                row: row,
+                                                column: col
+                                            }, neighbour];
+                                        }
 
                                     }
 
@@ -407,22 +692,28 @@
                             }
                         }
                     }
-
+                    this.deselectNumber();
                     return [];
                 },
                 /**
                  * displays a possible move to the user
                  */
                 showPossibleMove() {
+                    this.highlightAllNumbers();
                     const possibleMove = this.getPossibleMove();
-                    console.log(possibleMove);
+                    setTimeout(() => {
+                        this.resetHighlightedNumbers();
+                        if (possibleMove.length > 0) {
+                            this.highlightNumber(possibleMove[0].row, possibleMove[0].column)
+                            this.highlightNumber(possibleMove[1].row, possibleMove[1].column)
+                        }
+                    }, 300)
                 },
                 /**
                  * adds new rows if the player can't find anymore matches
                  */
                 addRows() {
-                    if (this.nrOfRowsAdded >= this.maxNrOfRowsAddable) {
-                        console.log('cant add anymore');
+                    if (this.nrRowsToAdd === 0) {
                         return;
                     };
                     this.nrOfRowsAdded++
@@ -448,7 +739,7 @@
                     const numbers = [];
                     this.numbers.forEach(row => numbers.push(...row));
 
-                    return (function*() {
+                    return (function* () {
                         for (const element of numbers) {
                             if (element) yield element;
                         }
@@ -490,8 +781,18 @@
                  */
                 areNumbersLeft() {
                     return this.numbers.filter(row => row.filter(el => !!el).length > 0).length > 0;
+                },
+                /**
+                 * checks if the game is over
+                 */
+                isGameover() {
+                    const noRowsAddable = this.nrRowsToAdd === 0;
+                    const noMovesLeft = !this.isAnotherMovePossible();
+                    return noRowsAddable && noMovesLeft;
                 }
             }
         });
     </script>
-</body></html>
+</body>
+
+</html>
