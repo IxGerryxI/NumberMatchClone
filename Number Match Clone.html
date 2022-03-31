@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <title>Document</title>
+    <style>
+        .game_container {
+            padding: 5px;
+        }
+
+        .game_row {
+            max-width: 100%;
+            display: flex;
+        }
+
+        .number {
+            font-family: Roboto, sans-serif;
+            font-size: 24px;
+            display: inline-flex;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #eee;
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .number:hover {
+            background: #eee;
+        }
+
+        .number.selected {
+            background: #4dc8e9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app" class="content_wrapper">
+        <button @click="startGame">start</button>
+        <button @click="addRows">add more Rows ({{maxNrOfRowsAddable - nrOfRowsAdded}})</button>
+        <button @click="showPossibleMove">check for possible move</button>
+        <span class="score">Score: {{score}}</span>
+        <span class="score">Stage: {{stage}}</span>
+        <div class="game_container">
+            <div class="game_row" v-for="(row, rowIndex) in numbers" :key="'row_' + rowIndex">
+                <span v-for="(number, columnIndex) in row" :key="columnIndex + '_number_' + columnIndex" @click="numberClick($event, rowIndex, columnIndex)" :class="['number', {'selected': selection.row === rowIndex && selection.column === columnIndex}]">{{number}}</span>
+            </div>
+        </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/vue@2.6.11/dist/vue.min.js"></script>
+    <script>
+        /**
+         * TODOs:
+         * [ ] check if more moves are possible and if there aren't and the user cannot "addMoreRows" -> GameOver
+         * [ ] implement function showPossibleMove() -> already exist just need to make sure the numbers will be highlighted
+         *      [i] you will get an array with two objects containing row and col of the two matching neighbours
+         *      [ ] empty array if there are no matchings possible
+         * [ ] frontend design
+         *      [ ] layout
+         *      [ ] pretty buttons
+         *      [ ] score display
+         *      [ ] stage display
+         *      [ ] user feed back 
+         *          [ ] new stage
+         *          [ ] game over
+         *          [ ] no possible moves (after button click)
+         *          [ ] new Highscore
+         *      [ ] highscore display
+         * [ ] remember Highscore
+         * [ ] difficulty -> less matches on initial rows
+         */
+        /*------------------------------------------------------------------------------------------
+        ----------------------------------------- GLOBALS ------------------------------------------
+        ------------------------------------------------------------------------------------------*/
+
+        /*------------------------------------------------------------------------------------------
+        ------------------------------------------- VUE --------------------------------------------
+        ------------------------------------------------------------------------------------------*/
+        let app = new Vue({
+            el: '#app',
+            data: {
+                numbers: [],
+                score: 0,
+                stage: 1,
+                selection: {
+                    row: null,
+                    column: null,
+                    value: null
+                },
+                nrColumns: 10,
+                startRows: 3,
+                maxNrOfRowsAddable: 4,
+                nrOfRowsAdded: 0,
+            },
+            computed: {},
+            created() {},
+            methods: {
+                /**
+                 * starts a new Game
+                 */
+                startGame() {
+                    this.resetScore();
+                    this.resetStage();
+                    this.resetNrOfRowsAdded();
+                    this.fillNumbers();
+                },
+                /**
+                 * fills the numbers array with new random numbers
+                 */
+                fillNumbers() {
+                    this.resetNrOfRowsAdded();
+                    this.numbers = [];
+                    for (let i = 0; i < this.startRows; i++) {
+                        const row = [];
+                        for (let j = 0; j < this.nrColumns; j++) {
+                            row.push(Math.ceil(Math.random() * 9));
+
+                        }
+                        this.numbers.push(row);
+                    }
+                    let additionalRow = [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ];
+                    //push in empty arrays because the user can refresh 4Times
+                    for (let i = 0; i < 45; i++) {
+                        this.numbers.push([...additionalRow]);
+                    }
+                },
+                /**
+                 * handles what happens when you click on a number
+                 * @param {Object} event
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 */
+                numberClick(event, rowIndex, columnIndex) {
+                    if (this.selection.value === null) this.selectNumber(rowIndex, columnIndex);
+                    else {
+                        //check if the values of the first selection and the second are neighbours and equal or add up to 10 -> remove both numbers
+                        const value = this.numbers[rowIndex][columnIndex];
+                        if (this.valuesMatchesSelection(value) && this.isNeighbour(rowIndex, columnIndex)) {
+
+                            this.removeNumber(rowIndex, columnIndex);
+                            this.removeNumber(this.selection.row, this.selection.column);
+                            this.deselectNumber();
+
+                            this.deleteEmptyRows();
+
+
+                            this.addPoints(value + this.selection.value);
+
+                            //new stage
+                            if (!this.areNumbersLeft()) {
+                                this.fillNumbers();
+                                this.stage++;
+                            }
+
+                        } else {
+                            //if they don't match select the second number
+                            this.selectNumber(rowIndex, columnIndex);
+                        }
+                    }
+
+
+                },
+                /**
+                 * selects the given rowIndex and columnIndex
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 */
+                selectNumber(rowIndex, columnIndex) {
+                    this.selection.row = rowIndex;
+                    this.selection.column = columnIndex;
+                    this.selection.value = this.numbers[rowIndex][columnIndex];
+                },
+                /**
+                 * deselects the current selection
+                 */
+                deselectNumber() {
+                    this.selection.row = null;
+                    this.selection.column = null;
+                    this.selection.value = null;
+                },
+                /**
+                 * removes the number at the given coordinates
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 */
+                removeNumber(rowIndex, columnIndex) {
+                    Vue.set(this.numbers[rowIndex], columnIndex, "");
+                },
+                /**
+                 * checks if the given number matches the conditions to add up
+                 * @param {Number} number
+                 * @returns {Boolean}
+                 */
+                valuesMatchesSelection(number) {
+                    return number === this.selection.value || number + this.selection.value === 10;
+                },
+                /**
+                 * checks if the given coordinates are neighbours to the selection
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 * @returns {Boolean}
+                 */
+                isNeighbour(rowIndex, columnIndex) {
+                    return this.isHorizontalNeighbour(rowIndex, columnIndex) ||
+                        this.isVerticalNeighbour(rowIndex, columnIndex) ||
+                        this.isDiagonalNeighbour(rowIndex, columnIndex);
+                },
+                /**
+                 * checks if the given coordinates are horizontal neighbours to the selection
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 * @returns {Boolean}
+                 */
+                isHorizontalNeighbour(rowIndex, columnIndex) {
+                    const directions = ['left', 'right'];
+                    let isHorizontalNeighbour = false;
+
+                    for (const direction of directions) {
+                        let neighbour = this.getHorizontalNeighbour(direction);
+                        if (neighbour && neighbour.row === rowIndex && neighbour.column === columnIndex) {
+                            isHorizontalNeighbour = true;
+                            break;
+                        }
+                    }
+
+                    return isHorizontalNeighbour;
+                },
+                /**
+                 * gets the horizontal neighbour of the given direction
+                 * @param {String} direction - left / right
+                 * @returns {Object}
+                 */
+                getHorizontalNeighbour(direction) {
+                    const directionalOperator = direction === 'right' ? 1 : -1;
+                    const columnStart = direction === 'right' ? 0 : this.nrColumns - 1;
+                    const columnEnd = direction === 'right' ? this.nrColumns : -1;
+
+                    const neighbour = {
+                        row: this.selection.row,
+                        column: this.selection.column
+                    };
+
+                    while (true) {
+                        neighbour.column += directionalOperator;
+                        if (neighbour.column === columnEnd) {
+                            neighbour.column = columnStart;
+                            neighbour.row += directionalOperator;
+                            if (!this.numbers[neighbour.row]) return null;
+                        }
+
+                        if (this.numbers[neighbour.row][neighbour.column]) break; //exit the loop because you have found what you're looking for
+
+                    }
+
+                    return neighbour;
+                },
+                /**
+                 * checks if the given coordinates are vertical neighbours to the selection
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 * @returns {Boolean}
+                 */
+                isVerticalNeighbour(rowIndex, columnIndex) {
+                    const directions = ['up', 'down'];
+                    let isVerticalNeighbour = false;
+                    for (const direction of directions) {
+                        const neighbour = this.getVerticalNeighbour(direction);
+                        if (neighbour && neighbour.row === rowIndex && neighbour.column === columnIndex) {
+                            isVerticalNeighbour = true;
+                            break;
+                        }
+                    }
+
+                    return isVerticalNeighbour;
+                },
+                /**
+                 * gets the vertical neighbour of the given direction
+                 * @param {String} direction - up down
+                 * @returns {Object}
+                 */
+                getVerticalNeighbour(direction) {
+                    const directionalOperator = direction === 'down' ? 1 : -1;
+
+                    let neighbour = {
+                        row: this.selection.row,
+                        column: this.selection.column
+                    }
+
+                    while (true) {
+                        neighbour.row += directionalOperator
+
+                        if (!this.numbers[neighbour.row]) return null
+
+                        if (this.numbers[neighbour.row][neighbour.column]) break; //exit the loop because you have found what you're looking for
+                    }
+
+                    return neighbour;
+                },
+                /**
+                 * checks if the given coordinates are diagonal neighbours to the selection
+                 * @param {Number} rowIndex
+                 * @param {Number} columnIndex
+                 * @returns {Boolean}
+                 */
+                isDiagonalNeighbour(rowIndex, columnIndex) {
+                    const directions = ['bottomleft', 'bottomright', 'topleft', 'topright']
+                    let isDiagonalNeighbour = false;
+
+                    for (const direction of directions) {
+                        const neighbour = this.getDiagonalNeighbour(direction);
+                        if (neighbour && neighbour.row === rowIndex && neighbour.column === columnIndex) {
+                            isDiagonalNeighbour = true;
+                            break;
+                        }
+                    }
+
+                    return isDiagonalNeighbour;
+                },
+                /**
+                 * gets the vertical neighbour of the selection of the given direction
+                 * @param {String} direction - bottomleft / bottomright / topleft / topright
+                 * @returns {Object}
+                 */
+                getDiagonalNeighbour(direction) {
+                    const directionalOperatorRow = direction.includes('bottom') ? 1 : -1;
+                    const directionalOperatorColumn = direction.includes('right') ? 1 : -1;
+                    const columnEnd = direction.includes('right') ? this.nrColumns : 0;
+
+                    let neighbour = {
+                        row: this.selection.row,
+                        column: this.selection.column
+                    }
+
+                    while (true) {
+                        neighbour.row += directionalOperatorRow;
+                        neighbour.column += directionalOperatorColumn;
+
+                        if (!this.numbers[neighbour.row]) return null; //does the row exist?
+
+                        if (this.numbers[neighbour.row][neighbour.column]) break; //exit the loop because you have found what you're looking for
+
+                        if (neighbour.column === columnEnd) return null; //does the column exist
+                    }
+
+                    return neighbour;
+
+                },
+                /**
+                 * checks if there is another move possible
+                 */
+                isAnotherMovePossible() {
+                    return (this.getPossibleMove().length > 0);
+                },
+                /**
+                 * gets a move that is possible
+                 * @returns {Array<Object>} or an empty array if nothing was found
+                 */
+                getPossibleMove() {
+                    console.log('getPossibleMove()');
+                    for (let row in this.numbers) {
+                        for (let col in this.numbers[row]) {
+                            console.log('select row: ' + row + ' - col:' + col);
+                            if (!this.numbers[row][col]) continue;
+
+                            this.selectNumber(+row, +col);
+
+                            const neighbourFunctions = ['getHorizontalNeighbour', 'getVerticalNeighbour', 'getDiagonalNeighbour'];
+                            const functionDirections = {
+                                getHorizontalNeighbour: ['left', 'right'],
+                                getVerticalNeighbour: ['up', 'down'],
+                                getDiagonalNeighbour: ['bottomleft', 'bottomright', 'topleft', 'topright']
+                            };
+                            for (neighbourFunction of neighbourFunctions) {
+                                const directions = functionDirections[neighbourFunction];
+                                for (const direction of directions) {
+                                    const neighbour = this[neighbourFunction](direction);
+
+                                    if (neighbour) {
+                                        const value = this.numbers[neighbour.row][neighbour.column];
+                                        if (this.valuesMatchesSelection(value)) return [{
+                                            row: row,
+                                            column: col
+                                        }, neighbour];
+
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+
+                    return [];
+                },
+                /**
+                 * displays a possible move to the user
+                 */
+                showPossibleMove() {
+                    const possibleMove = this.getPossibleMove();
+                    console.log(possibleMove);
+                },
+                /**
+                 * adds new rows if the player can't find anymore matches
+                 */
+                addRows() {
+                    if (this.nrOfRowsAdded >= this.maxNrOfRowsAddable) {
+                        console.log('cant add anymore');
+                        return;
+                    };
+                    this.nrOfRowsAdded++
+                    const numbersToAdd = this.getNumbersToAdd();
+                    for (let rowNr in this.numbers) {
+                        const row = this.numbers[rowNr];
+                        for (let colNr in row) {
+                            const cell = row[colNr];
+                            if (cell === null) {
+                                const nextValue = numbersToAdd.next();
+                                if (nextValue.done) return;
+
+                                Vue.set(this.numbers[rowNr], colNr, nextValue.value);
+                            }
+                        }
+                    }
+                },
+                /**
+                 * returns a generator function that iterates through the numbers array 
+                 * @returns {function*} - a generator function that yields the next value of the numbers array
+                 */
+                getNumbersToAdd() {
+                    const numbers = [];
+                    this.numbers.forEach(row => numbers.push(...row));
+
+                    return (function*() {
+                        for (const element of numbers) {
+                            if (element) yield element;
+                        }
+                    }())
+                },
+                /**
+                 * deletes empty rows. Empty rows are rows that have been cleared
+                 */
+                deleteEmptyRows() {
+                    this.numbers = this.numbers.filter(row => row.filter(el => el !== '').length > 0);
+                },
+                /**
+                 * adds the given points to the score
+                 * @param {Number} points
+                 */
+                addPoints(points) {
+                    this.score += (points * this.stage);
+                },
+                /**
+                 * resets the score to 0
+                 */
+                resetScore() {
+                    this.score = 0;
+                },
+                /**
+                 * resets the stage to 1
+                 */
+                resetStage() {
+                    this.stage = 1;
+                },
+                /**
+                 * resets the nr of rows added counter
+                 */
+                resetNrOfRowsAdded() {
+                    this.nrOfRowsAdded = 0;
+                },
+                /**
+                 * check if there are any numbers left
+                 */
+                areNumbersLeft() {
+                    return this.numbers.filter(row => row.filter(el => !!el).length > 0).length > 0;
+                }
+            }
+        });
+    </script>
+</body></html>
