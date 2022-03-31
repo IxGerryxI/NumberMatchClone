@@ -25,7 +25,12 @@
             background-color: transparent;
             border: 1px solid rgb(200, 200, 200);
             padding: 5px 8px;
+        }
 
+        button.icon_btn {
+            border: none;
+            font-size: inherit;
+            padding: 0;
         }
 
         /************************************************************************************************
@@ -243,7 +248,7 @@
 
     <div id="app" class="content_wrapper">
         <header>
-            <h1>NumberMatch</h1>
+            <h1>NumberMatch <button class="icon_btn" @click="infoPopup = true">&#9432;</button></h1>
             <div class="score_wrapper">
                 <span :class="['score', {updated: stageUpdated}]">{{stage}}</span>
                 <span class="label">Stage</span>
@@ -288,6 +293,22 @@
                 </footer>
             </div>
         </aside>
+        <!-- INFO POPUP -->
+        <aside class="popup_container" v-if="infoPopup">
+            <div class="popup">
+                <header>RULES</header>
+                <main>
+                    <p>Find pairs of numbers that either have the same value or that have a sum of 10</p>
+                    <p>If you run out of matches, click the plus button to aadd the remaining numbers to the field</p>
+                    <p>Click the question mark to find matches</p>
+                    <p>If you clear the field, you'll make it to the next stage and get double, tripple, ... the points
+                    </p>
+                </main>
+                <footer>
+                    <button @click="infoPopup = false">OK</button>
+                </footer>
+            </div>
+        </aside>
     </div>
     <script src="https://unpkg.com/vue@2.6.11/dist/vue.min.js"></script>
     <script>
@@ -311,7 +332,7 @@
          *      [x] highscore display
          * [x] remember Highscore
          * [ ] difficulty -> less matches on initial rows
-         * [ ] explanation / howTo
+         * [x] explanation / howTo
          */
         /*------------------------------------------------------------------------------------------
         ----------------------------------------- GLOBALS ------------------------------------------
@@ -338,7 +359,8 @@
                 startRows: 3,
                 maxNrOfRowsAddable: 4,
                 nrOfRowsAdded: 0,
-                gameOverPopup: false
+                gameOverPopup: false,
+                infoPopup: false,
             },
             computed: {
                 nrRowsToAdd() {
